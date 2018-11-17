@@ -13,7 +13,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -22,6 +21,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -36,10 +37,9 @@ public class MainActivity extends Activity {
     private Handler handler;
 
     private ListView listView_app;
-    private ArrayAdapter arrayAdapter;
-    private ArrayList<String> arrayList;
+    private ListAdapter listAdapter;
 
-    private List<String> appPackageNameList;
+    private List<ResolveInfo> resolveInfos;
 
     private String appPackageName;
 
@@ -63,10 +63,6 @@ public class MainActivity extends Activity {
                     //Show real time
                     case 0:
                         textView_time.setText(new Date().toString());
-                        break;
-                    //
-                    case 1:
-                        arrayAdapter.notifyDataSetChanged();
                         break;
                     default:
                         break;
@@ -104,25 +100,7 @@ public class MainActivity extends Activity {
 
         textView_info = findViewById(R.id.textView_info);
 
-        appPackageNameList = new ArrayList<>();
-
         listView_app = findViewById(R.id.listView_app);
-
-        arrayList = new ArrayList<>();
-
-        arrayAdapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_1, arrayList);
-
-        listView_app.setAdapter(arrayAdapter);
-
-        listView_app.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-                button_start.setEnabled(true);
-
-                textView_info.setText(appPackageName = appPackageNameList.get(position));
-            }
-        });
     }
 
     public boolean isServiceRunning(Context context, String ServiceName) {
@@ -141,32 +119,27 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    protected ResolveInfo DigThirdAppInfos() {
+    protected void DigThirdAppInfos() {
         PackageManager packageManager = getPackageManager();
         //匹配程序的入口
         Intent intent = new Intent(Intent.ACTION_MAIN, null);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         //查询
-        List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(intent, 0);
-        for (int i = 0; i < resolveInfos.size(); i++) {
+        resolveInfos = packageManager.queryIntentActivities(intent, 0);
+        //
+        listAdapter = new ListAdapter(MainActivity.this, resolveInfos);
 
-            //APP Name
-            arrayList.add(resolveInfos.get(i).loadLabel(packageManager).toString());
+        listView_app.setAdapter(listAdapter);
+        //
+        listView_app.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-//            PackageName
-            appPackageNameList.add(resolveInfos.get(i).activityInfo.packageName);
+                textView_info.setText(appPackageName = resolveInfos.get(position).activityInfo.packageName);
 
-            //通知ListView刷新
-            handler.sendEmptyMessage(1);
-
-            try {
-                Thread.sleep(250);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                button_start.setEnabled(!appPackageName.equals(""));
             }
-
-        }
-        return null;
+        });
     }
 
     private class OnClickListener implements View.OnClickListener {
@@ -182,6 +155,10 @@ public class MainActivity extends Activity {
                     button_start.setEnabled(false);
 
                     service.putExtra("APP_PACKAGE", appPackageName);
+
+                    //
+                    service.putExtra("HOUR", 10);
+                    service.putExtra("MINUTE", new Random().nextInt(5) + 20);
 
                     //TODO:开启服务
                     startService(service);

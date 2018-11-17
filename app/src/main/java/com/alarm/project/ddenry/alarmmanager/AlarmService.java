@@ -8,6 +8,9 @@ import android.os.IBinder;
 import android.util.Log;
 
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Random;
+import java.util.TimeZone;
 
 public class AlarmService extends Service {
 
@@ -40,25 +43,32 @@ public class AlarmService extends Service {
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, _intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Calendar instance = Calendar.getInstance();
-        instance.set(Calendar.HOUR_OF_DAY, intent.getIntExtra("HOUR", instance.get(Calendar.HOUR_OF_DAY)));
-        instance.set(Calendar.MINUTE, intent.getIntExtra("MINUTE", instance.get(Calendar.MINUTE)));
-        instance.set(Calendar.SECOND, intent.getIntExtra("SECONDS", instance.get(Calendar.SECOND) + 5));
+        //
+        instance.setTimeInMillis(System.currentTimeMillis());
+        //
+        instance.setTimeZone(TimeZone.getTimeZone("GMT+8"));
 
+        instance.set(Calendar.HOUR_OF_DAY, intent.getIntExtra("HOUR", instance.get(Calendar.HOUR_OF_DAY)));
+
+        instance.set(Calendar.MINUTE, intent.getIntExtra("MINUTE", instance.get(Calendar.MINUTE)));
+
+        //ATTENTION:设置SECOND后Calendar重置为1981
+        //instance.set(Calendar.SECOND, intent.getIntExtra("SECONDS", new Random(36).nextInt()));
+
+        //
         if (instance.getTimeInMillis() < System.currentTimeMillis()) {
             instance.add(Calendar.DAY_OF_MONTH, 1);
         }
 
-        //TODO:重复天数
+        //重复天数
         if (instance.get(Calendar.DAY_OF_WEEK) == 1 || instance.get(Calendar.DAY_OF_WEEK) == 7)
             instance.set(Calendar.DAY_OF_WEEK, 2);
 
         Log.i("AlarmTime", (instance.get(Calendar.MONTH) + 1) + "-" + instance.get(Calendar.DAY_OF_MONTH) + " " + instance.get(Calendar.HOUR_OF_DAY) + ":" + instance.get(Calendar.MINUTE) + ":" + instance.get(Calendar.SECOND));
 
-        long triggerTime = instance.getTimeInMillis();
-
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, triggerTime, 60 * 1000, pendingIntent);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, instance.getTimeInMillis(), 60 * 1000, pendingIntent);
 
         return START_REDELIVER_INTENT;
     }
