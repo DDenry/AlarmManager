@@ -13,7 +13,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
             Log.i("Receiver", "Have received broadcast!");
 
-            Toast.makeText(context, "Try 2 open app " + intent.getStringExtra("APP_PACKAGE"), Toast.LENGTH_LONG).show();
+            Toast.makeText(context, "Try 2 open app " + intent.getStringExtra("APP_NAME"), Toast.LENGTH_LONG).show();
 
             //TODO:根据包名打开指定应用
             context.startActivity(context.getPackageManager().getLaunchIntentForPackage(intent.getStringExtra("APP_PACKAGE")));

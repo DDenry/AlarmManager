@@ -6,6 +6,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -34,8 +35,11 @@ public class AlarmService extends Service {
 
         Intent _intent = new Intent(AlarmService.this, AlarmReceiver.class);
 
+        _intent.putExtra("APP_NAME", intent.getStringExtra("APP_NAME"));
+
         _intent.putExtra("APP_PACKAGE", intent.getStringExtra("APP_PACKAGE"));
 
+        Log.i("Service", "APP_NAME is " + intent.getStringExtra("APP_NAME"));
         Log.i("Service", "APP_PACKAGE is " + intent.getStringExtra("APP_PACKAGE"));
 
         _intent.setAction(Config.ALARM_ACTION_SIGNAL);
@@ -68,7 +72,9 @@ public class AlarmService extends Service {
 
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, instance.getTimeInMillis(), 60 * 1000, pendingIntent);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, instance.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
+
+        Toast.makeText(this, "Please keep the service running for good work", Toast.LENGTH_LONG).show();
 
         return START_REDELIVER_INTENT;
     }
@@ -86,6 +92,8 @@ public class AlarmService extends Service {
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
         alarmManager.cancel(pendingIntent);
+
+        Toast.makeText(this, "There's no service running~", Toast.LENGTH_SHORT).show();
 
         super.onDestroy();
     }

@@ -17,6 +17,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.TimePicker;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -33,6 +34,11 @@ public class MainActivity extends Activity {
     private TextView textView_time;
     private TextView textView_info;
 
+    private TimePicker timePicker;
+
+    private int hour;
+    private int _minute;
+
     private Boolean serviceStarted;
     private Handler handler;
 
@@ -41,6 +47,7 @@ public class MainActivity extends Activity {
 
     private List<ResolveInfo> resolveInfos;
 
+    private String appName;
     private String appPackageName;
 
     @Override
@@ -100,6 +107,17 @@ public class MainActivity extends Activity {
 
         textView_info = findViewById(R.id.textView_info);
 
+        timePicker = findViewById(R.id.timePicker);
+        //
+        timePicker.setIs24HourView(true);
+        timePicker.setOnTimeChangedListener(new TimePicker.OnTimeChangedListener() {
+            @Override
+            public void onTimeChanged(TimePicker view, int hourOfDay, int minute) {
+                hour = hourOfDay;
+                _minute = minute;
+            }
+        });
+
         listView_app = findViewById(R.id.listView_app);
     }
 
@@ -120,7 +138,7 @@ public class MainActivity extends Activity {
     }
 
     protected void DigThirdAppInfos() {
-        PackageManager packageManager = getPackageManager();
+        final PackageManager packageManager = getPackageManager();
         //匹配程序的入口
         Intent intent = new Intent(Intent.ACTION_MAIN, null);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -134,6 +152,8 @@ public class MainActivity extends Activity {
         listView_app.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                appName = resolveInfos.get(position).activityInfo.loadLabel(packageManager).toString();
 
                 textView_info.setText(appPackageName = resolveInfos.get(position).activityInfo.packageName);
 
@@ -154,11 +174,12 @@ public class MainActivity extends Activity {
                     button_start.setText("Service is running ……");
                     button_start.setEnabled(false);
 
+                    service.putExtra("APP_NAME", appName);
                     service.putExtra("APP_PACKAGE", appPackageName);
 
                     //
-                    service.putExtra("HOUR", 10);
-                    service.putExtra("MINUTE", new Random().nextInt(5) + 20);
+                    service.putExtra("HOUR", hour);
+                    service.putExtra("MINUTE", _minute);
 
                     //TODO:开启服务
                     startService(service);
