@@ -24,7 +24,7 @@ public class ListAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        return lists.size() + 1;
+        return lists.size() + Config.EXTRA_ITEM_COUNT;
     }
 
     @Override
@@ -73,7 +73,7 @@ public class ListAdapter extends BaseAdapter {
             holder.show.setText("All " + lists.size() + " installed apps found");
         } else {
 
-            position -= 1;
+            position -= Config.EXTRA_ITEM_COUNT;
 
             holder.normal.setVisibility(View.VISIBLE);
             holder.signal.setVisibility(View.GONE);

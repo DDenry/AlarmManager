@@ -34,16 +34,14 @@ public class MainActivity extends Activity {
     private TextView textView_time;
     private TextView textView_info;
 
-    private TimePicker timePicker;
-
     private int hour;
     private int _minute;
 
-    private Boolean serviceStarted;
     private Handler handler;
 
     private ListView listView_app;
-    private ListAdapter listAdapter;
+
+    private PackageManager packageManager;
 
     private List<ResolveInfo> resolveInfos;
 
@@ -58,7 +56,7 @@ public class MainActivity extends Activity {
         //
         InitComponents();
 
-        serviceStarted = isServiceRunning(MainActivity.this, getPackageName() + ".AlarmService");
+        Boolean serviceStarted = isServiceRunning(MainActivity.this, getPackageName() + ".AlarmService");
 
         Log.i("Process", "Alarm service's state is " + serviceStarted);
 
@@ -107,7 +105,7 @@ public class MainActivity extends Activity {
 
         textView_info = findViewById(R.id.textView_info);
 
-        timePicker = findViewById(R.id.timePicker);
+        TimePicker timePicker = findViewById(R.id.timePicker);
         //
         timePicker.setIs24HourView(true);
         timePicker.setOnTimeChangedListener(new TimePicker.OnTimeChangedListener() {
@@ -138,20 +136,22 @@ public class MainActivity extends Activity {
     }
 
     protected void DigThirdAppInfos() {
-        final PackageManager packageManager = getPackageManager();
+        packageManager = getPackageManager();
         //匹配程序的入口
         Intent intent = new Intent(Intent.ACTION_MAIN, null);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         //查询
         resolveInfos = packageManager.queryIntentActivities(intent, 0);
         //
-        listAdapter = new ListAdapter(MainActivity.this, resolveInfos);
+        ListAdapter listAdapter = new ListAdapter(MainActivity.this, resolveInfos);
 
         listView_app.setAdapter(listAdapter);
         //
         listView_app.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                position -= Config.EXTRA_ITEM_COUNT;
 
                 appName = resolveInfos.get(position).activityInfo.loadLabel(packageManager).toString();
 

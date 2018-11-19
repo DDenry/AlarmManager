@@ -1,9 +1,11 @@
 package com.alarm.project.ddenry.alarmmanager;
 
 import android.app.AlarmManager;
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -12,6 +14,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Random;
 import java.util.TimeZone;
+
+import static android.app.PendingIntent.getActivity;
 
 public class AlarmService extends Service {
 
@@ -25,6 +29,7 @@ public class AlarmService extends Service {
     @Override
     public void onCreate() {
         Log.i("Service", "OnCreate!");
+
         super.onCreate();
     }
 
@@ -32,6 +37,17 @@ public class AlarmService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         Log.i("Service", "OnStartCommand!");
+
+        // 在API11之后构建Notification的方式
+
+        Notification.Builder builder = new Notification.Builder(this.getApplicationContext());
+
+        builder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.icon)).setContentTitle("").setContentText("Service is running in backend!").setWhen(System.currentTimeMillis());
+
+        Notification notification = builder.build();
+        notification.defaults = Notification.DEFAULT_SOUND;
+
+        startForeground(Config.FOREGROUND_SERVICE_CODE, notification);
 
         Intent _intent = new Intent(AlarmService.this, AlarmReceiver.class);
 
@@ -82,6 +98,9 @@ public class AlarmService extends Service {
     @Override
     public void onDestroy() {
         Log.i("Service", "OnDestroy!");
+
+        stopForeground(true);
+
         //TODO:取消Alarm
         Intent _intent = new Intent(AlarmService.this, AlarmReceiver.class);
 
