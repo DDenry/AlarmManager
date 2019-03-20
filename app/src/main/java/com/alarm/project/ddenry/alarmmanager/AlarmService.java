@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -21,6 +22,9 @@ public class AlarmService extends Service {
 
     private AlarmManager alarmManager;
 
+    private int hour;
+    private int minute;
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -31,6 +35,13 @@ public class AlarmService extends Service {
         Log.i("Service", "OnCreate!");
 
         super.onCreate();
+
+        // 在API11之后构建Notification的方式
+        Notification.Builder builder = new Notification.Builder(this.getApplicationContext());
+        builder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.icon)).setContentTitle("").setContentText("Service is running in backend!").setWhen(System.currentTimeMillis());
+        Notification notification = builder.build();
+        notification.defaults = Notification.DEFAULT_SOUND;
+        startForeground(Config.FOREGROUND_SERVICE_CODE, notification);
     }
 
     @Override
@@ -38,17 +49,7 @@ public class AlarmService extends Service {
 
         Log.i("Service", "OnStartCommand!");
 
-        // 在API11之后构建Notification的方式
-
-        Notification.Builder builder = new Notification.Builder(this.getApplicationContext());
-
-        builder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.icon)).setContentTitle("").setContentText("Service is running in backend!").setWhen(System.currentTimeMillis());
-
-        Notification notification = builder.build();
-        notification.defaults = Notification.DEFAULT_SOUND;
-
-        startForeground(Config.FOREGROUND_SERVICE_CODE, notification);
-
+        //
         Intent _intent = new Intent(AlarmService.this, AlarmReceiver.class);
 
         _intent.putExtra("APP_NAME", intent.getStringExtra("APP_NAME"));
@@ -60,8 +61,6 @@ public class AlarmService extends Service {
 
         _intent.setAction(Config.ALARM_ACTION_SIGNAL);
 
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, _intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
         Calendar instance = Calendar.getInstance();
         //
         instance.setTimeInMillis(System.currentTimeMillis());
@@ -70,13 +69,19 @@ public class AlarmService extends Service {
 
         instance.set(Calendar.HOUR_OF_DAY, intent.getIntExtra("HOUR", instance.get(Calendar.HOUR_OF_DAY)));
 
+
         instance.set(Calendar.MINUTE, intent.getIntExtra("MINUTE", instance.get(Calendar.MINUTE)));
 
         //ATTENTION:设置SECOND后Calendar重置为1981
         //instance.set(Calendar.SECOND, intent.getIntExtra("SECONDS", new Random(36).nextInt()));
 
+        if (intent.getStringExtra("PROCESS") != null)
+            if (intent.getStringExtra("PROCESS").equals("Receiver")) {
+                instance.add(Calendar.DAY_OF_MONTH, 1);
+            }
+
         //
-        if (instance.getTimeInMillis() < System.currentTimeMillis()) {
+        while (instance.getTimeInMillis() < System.currentTimeMillis()) {
             instance.add(Calendar.DAY_OF_MONTH, 1);
         }
 
@@ -84,13 +89,22 @@ public class AlarmService extends Service {
         if (instance.get(Calendar.DAY_OF_WEEK) == 1 || instance.get(Calendar.DAY_OF_WEEK) == 7)
             instance.set(Calendar.DAY_OF_WEEK, 2);
 
+        _intent.putExtra("HOUR", instance.get(Calendar.HOUR_OF_DAY));
+
+        _intent.putExtra("MINUTE", instance.get(Calendar.MINUTE));
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, _intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
         Log.i("AlarmTime", (instance.get(Calendar.MONTH) + 1) + "-" + instance.get(Calendar.DAY_OF_MONTH) + " " + instance.get(Calendar.HOUR_OF_DAY) + ":" + instance.get(Calendar.MINUTE) + ":" + instance.get(Calendar.SECOND));
 
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, instance.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
+        // 定时任务
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, instance.getTimeInMillis(), pendingIntent);
 
-        Toast.makeText(this, "Please keep the service running for good work", Toast.LENGTH_LONG).show();
+//        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, instance.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
+
+        Toast.makeText(this, R.string.tip_keep_service, Toast.LENGTH_LONG).show();
 
         return START_REDELIVER_INTENT;
     }
@@ -101,7 +115,7 @@ public class AlarmService extends Service {
 
         stopForeground(true);
 
-        //TODO:取消Alarm
+        //取消Alarm
         Intent _intent = new Intent(AlarmService.this, AlarmReceiver.class);
 
         _intent.setAction(Config.ALARM_ACTION_SIGNAL);
@@ -112,7 +126,7 @@ public class AlarmService extends Service {
 
         alarmManager.cancel(pendingIntent);
 
-        Toast.makeText(this, "There's no service running~", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.no_service_running, Toast.LENGTH_SHORT).show();
 
         super.onDestroy();
     }

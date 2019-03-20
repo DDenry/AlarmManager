@@ -1,3 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AlarmManager</string>
-</resources>
+    <string name="app_name">AlarmManger</string>
+    <string name="service_running">Service is running ……</string>
+    <string name="start_service">Start Service</string>
+    <string name="stop_service">Stop Service</string>
+    <string name="tip_keep_service">Please keep the service running for well-working</string>
+    <string name="no_service_running">There\'s no service running~</string>
+    <string name="tip_title">Please select the app and time:</string>
+    <string name="copy_right">©2019-* @DDenry All rights reserved.</string>
+    <string name="installed_apps">installed apps found!</string>
+    </resources>

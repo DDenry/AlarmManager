@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">“闹”</string>
+    <string name="service_running">服务正在运行 ……</string>
+    <string name="start_service">开启服务</string>
+    <string name="stop_service">关闭服务</string>
+    <string name="tip_keep_service">请保持服务开启</string>
+    <string name="no_service_running">没有运行中的服务~</string>
+    <string name="tip_title">请选择应用以及时间：</string>
+    <string name="installed_apps">个已装应用！</string>
+</resources>

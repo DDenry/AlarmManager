@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.List;
+import java.util.Locale;
 
 public class ListAdapter extends BaseAdapter {
 
@@ -70,7 +71,7 @@ public class ListAdapter extends BaseAdapter {
         if (position == 0) {
             holder.normal.setVisibility(View.GONE);
             holder.signal.setVisibility(View.VISIBLE);
-            holder.show.setText("All " + lists.size() + " installed apps found");
+            holder.show.setText(String.format(Locale.CHINA, "%d %s", lists.size(), context.getResources().getString(R.string.installed_apps)));
         } else {
 
             position -= Config.EXTRA_ITEM_COUNT;

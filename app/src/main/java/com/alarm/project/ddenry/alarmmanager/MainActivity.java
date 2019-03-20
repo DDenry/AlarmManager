@@ -31,8 +31,10 @@ public class MainActivity extends Activity {
 
     private Button button_start;
     private Button button_stop;
+    private TextView textView_title;
     private TextView textView_time;
     private TextView textView_info;
+    private TimePicker timePicker;
 
     private int hour;
     private int _minute;
@@ -49,6 +51,15 @@ public class MainActivity extends Activity {
     private String appPackageName;
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putString("packageName", appPackageName);
+        outState.putInt("hour", hour);
+        outState.putInt("minute", _minute);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -56,9 +67,38 @@ public class MainActivity extends Activity {
         //
         InitComponents();
 
-        Boolean serviceStarted = isServiceRunning(MainActivity.this, getPackageName() + ".AlarmService");
+        boolean serviceStarted = isServiceRunning(MainActivity.this, getPackageName() + ".AlarmService");
 
         Log.i("Process", "Alarm service's state is " + serviceStarted);
+
+        if (serviceStarted) {
+
+            if (savedInstanceState != null) {
+
+                String packageName = savedInstanceState.getString("packageName");
+
+                appPackageName = packageName;
+
+                Log.i("Process", "Current service is running of " + packageName);
+                Log.i("Process", "Scheduled time is " + savedInstanceState.getInt("hour") + ":" + savedInstanceState.getInt("minute"));
+
+                //
+                timePicker.setHour(savedInstanceState.getInt("hour"));
+                timePicker.setMinute(savedInstanceState.getInt("minute"));
+                timePicker.setEnabled(false);
+
+                textView_info.setText(packageName);
+
+                button_stop.setEnabled(true);
+
+                button_start.setText(R.string.service_running);
+                button_start.setEnabled(false);
+
+                listView_app.setVisibility(View.GONE);
+
+                textView_title.setText(getResources().getString(R.string.service_running));
+            }
+        }
 
         //
         handler = new Handler() {
@@ -76,7 +116,7 @@ public class MainActivity extends Activity {
             }
         };
 
-        //TODO:异步获取第三方应用信息
+        //异步获取第三方应用信息
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -95,6 +135,9 @@ public class MainActivity extends Activity {
     }
 
     protected void InitComponents() {
+
+        textView_title = findViewById(R.id.textView_title);
+
         button_start = findViewById(R.id.button_start);
         button_start.setOnClickListener(new OnClickListener());
 
@@ -105,9 +148,10 @@ public class MainActivity extends Activity {
 
         textView_info = findViewById(R.id.textView_info);
 
-        TimePicker timePicker = findViewById(R.id.timePicker);
+        timePicker = findViewById(R.id.timePicker);
         //
         timePicker.setIs24HourView(true);
+
         timePicker.setOnTimeChangedListener(new TimePicker.OnTimeChangedListener() {
             @Override
             public void onTimeChanged(TimePicker view, int hourOfDay, int minute) {
@@ -171,8 +215,10 @@ public class MainActivity extends Activity {
 
                     button_stop.setEnabled(true);
 
-                    button_start.setText("Service is running ……");
+                    button_start.setText(R.string.service_running);
                     button_start.setEnabled(false);
+
+                    timePicker.setEnabled(false);
 
                     service.putExtra("APP_NAME", appName);
                     service.putExtra("APP_PACKAGE", appPackageName);
@@ -181,17 +227,29 @@ public class MainActivity extends Activity {
                     service.putExtra("HOUR", hour);
                     service.putExtra("MINUTE", _minute);
 
-                    //TODO:开启服务
+                    listView_app.setVisibility(View.GONE);
+
+                    textView_title.setText(getResources().getString(R.string.service_running));
+
+                    //开启服务
                     startService(service);
+
                     break;
                 case R.id.button_stop:
                     button_stop.setEnabled(false);
 
-                    button_start.setText("Start Service");
+                    button_start.setText(R.string.start_service);
                     button_start.setEnabled(true);
 
-                    //TODO:关闭服务
+                    //关闭服务
                     stopService(service);
+
+                    listView_app.setVisibility(View.VISIBLE);
+
+                    textView_title.setText(getResources().getString(R.string.tip_title));
+
+                    timePicker.setEnabled(true);
+
                     break;
             }
 
