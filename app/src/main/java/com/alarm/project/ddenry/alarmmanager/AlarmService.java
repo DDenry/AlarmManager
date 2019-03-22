@@ -6,24 +6,16 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
-import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Random;
 import java.util.TimeZone;
-
-import static android.app.PendingIntent.getActivity;
 
 public class AlarmService extends Service {
 
     private AlarmManager alarmManager;
-
-    private int hour;
-    private int minute;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -86,8 +78,8 @@ public class AlarmService extends Service {
         }
 
         //重复天数
-        if (instance.get(Calendar.DAY_OF_WEEK) == 1 || instance.get(Calendar.DAY_OF_WEEK) == 7)
-            instance.set(Calendar.DAY_OF_WEEK, 2);
+        while (instance.get(Calendar.DAY_OF_WEEK) == 1 || instance.get(Calendar.DAY_OF_WEEK) == 7)
+            instance.add(Calendar.DAY_OF_MONTH, 1);
 
         _intent.putExtra("HOUR", instance.get(Calendar.HOUR_OF_DAY));
 
