@@ -1,11 +1,14 @@
 package com.alarm.project.ddenry.alarmmanager;
 
+import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -16,6 +19,8 @@ import java.util.TimeZone;
 public class AlarmService extends Service {
 
     private AlarmManager alarmManager;
+    private ActivityManager activityManager;
+    private Handler handler = new Handler();
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -25,7 +30,7 @@ public class AlarmService extends Service {
     @Override
     public void onCreate() {
         Log.i("Service", "OnCreate!");
-
+        activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         super.onCreate();
 
         // 在API11之后构建Notification的方式
@@ -46,10 +51,12 @@ public class AlarmService extends Service {
 
         _intent.putExtra("APP_NAME", intent.getStringExtra("APP_NAME"));
 
-        _intent.putExtra("APP_PACKAGE", intent.getStringExtra("APP_PACKAGE"));
+        final String appPackageName = intent.getStringExtra("APP_PACKAGE");
+
+        _intent.putExtra("APP_PACKAGE", appPackageName);
 
         Log.i("Service", "APP_NAME is " + intent.getStringExtra("APP_NAME"));
-        Log.i("Service", "APP_PACKAGE is " + intent.getStringExtra("APP_PACKAGE"));
+        Log.i("Service", "APP_PACKAGE is " + appPackageName);
 
         _intent.setAction(Config.ALARM_ACTION_SIGNAL);
 
@@ -61,7 +68,6 @@ public class AlarmService extends Service {
 
         instance.set(Calendar.HOUR_OF_DAY, intent.getIntExtra("HOUR", instance.get(Calendar.HOUR_OF_DAY)));
 
-
         instance.set(Calendar.MINUTE, intent.getIntExtra("MINUTE", instance.get(Calendar.MINUTE)));
 
         //ATTENTION:设置SECOND后Calendar重置为1981
@@ -70,6 +76,33 @@ public class AlarmService extends Service {
         if (intent.getStringExtra("PROCESS") != null)
             if (intent.getStringExtra("PROCESS").equals("Receiver")) {
                 instance.add(Calendar.DAY_OF_MONTH, 1);
+                //
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.i("Service", "Has stopped app " + appPackageName);
+                        //停止需要定时启动的应用
+
+                        //回到主界面
+                        Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
+                        mHomeIntent.addCategory(Intent.CATEGORY_HOME);
+                        mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                        startActivity(mHomeIntent);
+
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        //停止后台进程
+                        activityManager.killBackgroundProcesses(appPackageName);
+
+                        //重启自身应用
+                        startActivity(getPackageManager().getLaunchIntentForPackage(getPackageName()));
+                    }
+                }, 60 * 1000);
             }
 
         //
@@ -77,7 +110,7 @@ public class AlarmService extends Service {
             instance.add(Calendar.DAY_OF_MONTH, 1);
         }
 
-        //重复天数
+        //工作日重复，周六日不重复
         while (instance.get(Calendar.DAY_OF_WEEK) == 1 || instance.get(Calendar.DAY_OF_WEEK) == 7)
             instance.add(Calendar.DAY_OF_MONTH, 1);
 

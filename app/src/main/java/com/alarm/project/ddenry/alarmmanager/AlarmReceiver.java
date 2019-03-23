@@ -1,5 +1,6 @@
 package com.alarm.project.ddenry.alarmmanager;
 
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -7,6 +8,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 public class AlarmReceiver extends BroadcastReceiver {
+
     @Override
     public void onReceive(Context context, Intent intent) {
 
@@ -26,6 +28,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             _intent.putExtra("APP_PACKAGE", intent.getStringExtra("APP_PACKAGE"));
             _intent.putExtra("HOUR", intent.getIntExtra("HOUR", 0));
             _intent.putExtra("MINUTE", intent.getIntExtra("MINUTE", 0));
+
             context.startService(_intent);
         }
     }
