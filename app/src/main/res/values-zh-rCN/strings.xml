@@ -8,4 +8,5 @@
     <string name="no_service_running">没有运行中的服务~</string>
     <string name="tip_title">请选择应用以及时间：</string>
     <string name="installed_apps">个已装应用！</string>
+    <string name="alarm_time">提醒时间为</string>
 </resources>

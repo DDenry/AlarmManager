@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/linearLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -22,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="2dp"
-        android:layout_weight="7"
+        android:layout_weight="6"
         android:dividerHeight="5dp"
         android:fastScrollEnabled="true" />
 
@@ -35,11 +36,13 @@
         android:gravity="center"
         android:textColor="@android:color/darker_gray" />
 
-    <TimePicker
-        android:id="@+id/timePicker"
+    <ImageView
+        android:id="@+id/imageView_clock"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="3" />
+        android:layout_weight="2"
+        android:scaleType="centerInside"
+        android:src="@mipmap/icon" />
 
     <TextView
         android:id="@+id/textView_info"
@@ -77,6 +80,7 @@
 
 
     <TextView
+        android:id="@+id/textView_copyright"
         android:layout_width="match_parent"
         android:layout_height="20dp"
         android:gravity="center"

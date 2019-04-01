@@ -9,4 +9,5 @@
     <string name="tip_title">Please select the app and time:</string>
     <string name="copy_right">©2019-* @DDenry All rights reserved.</string>
     <string name="installed_apps">installed apps found!</string>
+    <string name="alarm_time">Alarm time is </string>
     </resources>

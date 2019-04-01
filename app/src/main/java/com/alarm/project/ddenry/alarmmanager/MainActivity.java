@@ -2,6 +2,7 @@ package com.alarm.project.ddenry.alarmmanager;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -9,17 +10,22 @@ import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.design.widget.BaseTransientBottomBar;
+import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +40,10 @@ public class MainActivity extends Activity {
     private TextView textView_title;
     private TextView textView_time;
     private TextView textView_info;
-    private TimePicker timePicker;
+    private ImageView imageView_clock;
 
-    private int hour;
-    private int _minute;
+    private static int hour;
+    private static int _minute;
 
     private Handler handler;
 
@@ -45,10 +51,12 @@ public class MainActivity extends Activity {
 
     private PackageManager packageManager;
 
-    private List<ResolveInfo> resolveInfos;
+    private List<ResolveInfo> resolveInfo;
 
     private String appName;
     private String appPackageName;
+
+    private LinearLayout linearLayout;
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -83,16 +91,15 @@ public class MainActivity extends Activity {
                 Log.i("Process", "Scheduled time is " + savedInstanceState.getInt("hour") + ":" + savedInstanceState.getInt("minute"));
 
                 //
-                timePicker.setHour(savedInstanceState.getInt("hour"));
-                timePicker.setMinute(savedInstanceState.getInt("minute"));
-                timePicker.setEnabled(false);
+                hour = savedInstanceState.getInt("hour");
+                _minute = savedInstanceState.getInt("minute");
 
                 textView_info.setText(packageName);
 
-                button_stop.setEnabled(true);
-
                 button_start.setText(R.string.service_running);
                 button_start.setEnabled(false);
+
+                button_stop.setEnabled(true);
 
                 listView_app.setVisibility(View.GONE);
 
@@ -121,7 +128,7 @@ public class MainActivity extends Activity {
             @Override
             public void run() {
                 //
-                DigThirdAppInfos();
+                DigThirdAppInfo();
             }
         }).start();
 
@@ -132,9 +139,12 @@ public class MainActivity extends Activity {
                 handler.sendEmptyMessage(0);
             }
         }, 1000, 1000);
+
     }
 
     protected void InitComponents() {
+
+        linearLayout = findViewById(R.id.linearLayout);
 
         textView_title = findViewById(R.id.textView_title);
 
@@ -148,17 +158,9 @@ public class MainActivity extends Activity {
 
         textView_info = findViewById(R.id.textView_info);
 
-        timePicker = findViewById(R.id.timePicker);
-        //
-        timePicker.setIs24HourView(true);
+        imageView_clock = findViewById(R.id.imageView_clock);
 
-        timePicker.setOnTimeChangedListener(new TimePicker.OnTimeChangedListener() {
-            @Override
-            public void onTimeChanged(TimePicker view, int hourOfDay, int minute) {
-                hour = hourOfDay;
-                _minute = minute;
-            }
-        });
+        imageView_clock.setOnClickListener(new OnClickListener());
 
         listView_app = findViewById(R.id.listView_app);
     }
@@ -179,15 +181,15 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    protected void DigThirdAppInfos() {
+    protected void DigThirdAppInfo() {
         packageManager = getPackageManager();
         //匹配程序的入口
         Intent intent = new Intent(Intent.ACTION_MAIN, null);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         //查询
-        resolveInfos = packageManager.queryIntentActivities(intent, 0);
+        resolveInfo = packageManager.queryIntentActivities(intent, 0);
         //
-        ListAdapter listAdapter = new ListAdapter(MainActivity.this, resolveInfos);
+        ListAdapter listAdapter = new ListAdapter(MainActivity.this, resolveInfo);
 
         listView_app.setAdapter(listAdapter);
         //
@@ -197,13 +199,28 @@ public class MainActivity extends Activity {
 
                 position -= Config.EXTRA_ITEM_COUNT;
 
-                appName = resolveInfos.get(position).activityInfo.loadLabel(packageManager).toString();
+                appName = resolveInfo.get(position).activityInfo.loadLabel(packageManager).toString();
 
-                textView_info.setText(appPackageName = resolveInfos.get(position).activityInfo.packageName);
+                textView_info.setText(appPackageName = resolveInfo.get(position).activityInfo.packageName);
 
                 button_start.setEnabled(!appPackageName.equals(""));
             }
         });
+    }
+
+    private void showSnackBar() {
+
+        Snackbar.make(linearLayout, getResources().getString(R.string.alarm_time) + " " + hour + ":" + _minute, Snackbar.LENGTH_SHORT).setAction("DDenry~", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.i("SnackBar", "Button clicked!");
+            }
+        }).addCallback(new BaseTransientBottomBar.BaseCallback<Snackbar>() {
+            @Override
+            public void onDismissed(Snackbar transientBottomBar, int event) {
+                Log.i("SnackBar", event + "");
+            }
+        }).show();
     }
 
     private class OnClickListener implements View.OnClickListener {
@@ -211,14 +228,28 @@ public class MainActivity extends Activity {
         public void onClick(View v) {
             Intent service = new Intent(MainActivity.this, AlarmService.class);
             switch (v.getId()) {
+
+                case R.id.imageView_clock:
+
+                    if (listView_app.getVisibility() == View.VISIBLE)
+                        new TimePickerDialog(MainActivity.this,
+                                new TimePickerDialog.OnTimeSetListener() {
+                                    @Override
+                                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+                                        hour = hourOfDay;
+                                        _minute = minute;
+                                    }
+                                }, Calendar.getInstance().get(Calendar.HOUR_OF_DAY), Calendar.getInstance().get(Calendar.MINUTE), true).show();
+                    else showSnackBar();
+
+                    break;
+
                 case R.id.button_start:
 
                     button_stop.setEnabled(true);
 
                     button_start.setText(R.string.service_running);
                     button_start.setEnabled(false);
-
-                    timePicker.setEnabled(false);
 
                     service.putExtra("APP_NAME", appName);
                     service.putExtra("APP_PACKAGE", appPackageName);
@@ -230,6 +261,8 @@ public class MainActivity extends Activity {
                     listView_app.setVisibility(View.GONE);
 
                     textView_title.setText(getResources().getString(R.string.service_running));
+
+                    showSnackBar();
 
                     //开启服务
                     startService(service);
@@ -247,8 +280,6 @@ public class MainActivity extends Activity {
                     listView_app.setVisibility(View.VISIBLE);
 
                     textView_title.setText(getResources().getString(R.string.tip_title));
-
-                    timePicker.setEnabled(true);
 
                     break;
             }

@@ -120,7 +120,9 @@ public class AlarmService extends Service {
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, _intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Log.i("AlarmTime", (instance.get(Calendar.MONTH) + 1) + "-" + instance.get(Calendar.DAY_OF_MONTH) + " " + instance.get(Calendar.HOUR_OF_DAY) + ":" + instance.get(Calendar.MINUTE) + ":" + instance.get(Calendar.SECOND));
+        String alarmTime = (instance.get(Calendar.MONTH) + 1) + "-" + instance.get(Calendar.DAY_OF_MONTH) + " " + instance.get(Calendar.HOUR_OF_DAY) + ":" + instance.get(Calendar.MINUTE) + ":" + instance.get(Calendar.SECOND);
+
+        Log.i("AlarmTime", alarmTime);
 
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
@@ -128,8 +130,6 @@ public class AlarmService extends Service {
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, instance.getTimeInMillis(), pendingIntent);
 
 //        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, instance.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
-
-        Toast.makeText(this, R.string.tip_keep_service, Toast.LENGTH_LONG).show();
 
         return START_REDELIVER_INTENT;
     }
