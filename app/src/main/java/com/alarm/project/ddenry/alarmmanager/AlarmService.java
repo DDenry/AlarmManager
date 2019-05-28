@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -21,6 +22,7 @@ public class AlarmService extends Service {
     private AlarmManager alarmManager;
     private ActivityManager activityManager;
     private Handler handler = new Handler();
+    private PowerManager.WakeLock wakeLock;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -45,6 +47,18 @@ public class AlarmService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         Log.i("Service", "OnStartCommand!");
+
+        //唤醒CPU
+        PowerManager powerManager = (PowerManager) this.getApplicationContext()
+                .getSystemService(Context.POWER_SERVICE);
+
+        if (powerManager != null) {
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AlarmManager:WakeLock");
+        }
+
+        wakeLock.acquire(15 * 60 * 60 * 1000L /*15 hours*/);
+
+        wakeLock.setReferenceCounted(false);
 
         //
         Intent _intent = new Intent(AlarmService.this, AlarmReceiver.class);
@@ -81,7 +95,6 @@ public class AlarmService extends Service {
                     @Override
                     public void run() {
                         Log.i("Service", "Has stopped app " + appPackageName);
-                        //停止需要定时启动的应用
 
                         //回到主界面
                         Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
@@ -149,9 +162,14 @@ public class AlarmService extends Service {
 
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
-        alarmManager.cancel(pendingIntent);
+        if (alarmManager != null) {
+            alarmManager.cancel(pendingIntent);
+        }
 
         Toast.makeText(this, R.string.no_service_running, Toast.LENGTH_SHORT).show();
+
+        //
+        wakeLock.release();
 
         super.onDestroy();
     }
