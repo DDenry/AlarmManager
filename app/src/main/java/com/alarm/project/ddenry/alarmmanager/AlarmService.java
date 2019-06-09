@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -22,7 +21,6 @@ public class AlarmService extends Service {
     private AlarmManager alarmManager;
     private ActivityManager activityManager;
     private Handler handler = new Handler();
-    private PowerManager.WakeLock wakeLock;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -47,18 +45,6 @@ public class AlarmService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         Log.i("Service", "OnStartCommand!");
-
-        //唤醒CPU
-        PowerManager powerManager = (PowerManager) this.getApplicationContext()
-                .getSystemService(Context.POWER_SERVICE);
-
-        if (powerManager != null) {
-            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AlarmManager:WakeLock");
-        }
-
-        wakeLock.acquire(15 * 60 * 60 * 1000L /*15 hours*/);
-
-        wakeLock.setReferenceCounted(false);
 
         //
         Intent _intent = new Intent(AlarmService.this, AlarmReceiver.class);
@@ -115,7 +101,7 @@ public class AlarmService extends Service {
                         //重启自身应用
                         startActivity(getPackageManager().getLaunchIntentForPackage(getPackageName()));
                     }
-                }, 60 * 1000);
+                }, 30 * 1000);
             }
 
         //
@@ -124,7 +110,7 @@ public class AlarmService extends Service {
         }
 
         //工作日重复，周六日不重复
-        while (instance.get(Calendar.DAY_OF_WEEK) == 1 || instance.get(Calendar.DAY_OF_WEEK) == 7)
+        while (instance.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY || instance.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY)
             instance.add(Calendar.DAY_OF_MONTH, 1);
 
         _intent.putExtra("HOUR", instance.get(Calendar.HOUR_OF_DAY));
@@ -167,9 +153,6 @@ public class AlarmService extends Service {
         }
 
         Toast.makeText(this, R.string.no_service_running, Toast.LENGTH_SHORT).show();
-
-        //
-        wakeLock.release();
 
         super.onDestroy();
     }
