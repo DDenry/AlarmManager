@@ -48,37 +48,28 @@ public class ListAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder = null;
 
-        //TODO:判断是否是Top或者Bottom显示的Item
-
         if (convertView == null || convertView.getTag() == null) {
             convertView = LayoutInflater.from(context).inflate(R.layout.list_item, null);
             holder = new ViewHolder();
             holder.normal = convertView.findViewById(R.id.linearLayout_normal);
             holder.signal = convertView.findViewById(R.id.linearLayout_signal);
-
             holder.icon = convertView.findViewById(R.id.imageView);
-
             holder.name = convertView.findViewById(R.id.textView_name);
-
             holder.show = convertView.findViewById(R.id.textView_show);
-
             convertView.setTag(holder);
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
 
-        //最后一条
-        if (position == 0) {
+        //列表第一条
+        if (position <= Config.EXTRA_ITEM_COUNT - 1) {
             holder.normal.setVisibility(View.GONE);
             holder.signal.setVisibility(View.VISIBLE);
             holder.show.setText(String.format(Locale.CHINA, "%d %s", lists.size(), context.getResources().getString(R.string.installed_apps)));
         } else {
-
             position -= Config.EXTRA_ITEM_COUNT;
-
             holder.normal.setVisibility(View.VISIBLE);
             holder.signal.setVisibility(View.GONE);
-
             holder.icon.setImageDrawable(lists.get(position).activityInfo.loadIcon(context.getPackageManager()));
             holder.name.setText(lists.get(position).loadLabel(context.getPackageManager()).toString());
         }

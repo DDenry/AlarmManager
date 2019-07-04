@@ -7,6 +7,8 @@
     <string name="tip_keep_service">请保持服务开启</string>
     <string name="no_service_running">没有运行中的服务~</string>
     <string name="tip_title">请选择应用以及时间：</string>
+    <string name="copy_right">©2019-* @DDenry All rights reserved.</string>
+    <string name="device_app_icon">设备应用图标</string>
     <string name="installed_apps">个已装应用！</string>
     <string name="alarm_time">提醒时间为</string>
 </resources>

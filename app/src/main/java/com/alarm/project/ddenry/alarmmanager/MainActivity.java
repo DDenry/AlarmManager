@@ -24,6 +24,7 @@ import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -38,14 +39,12 @@ public class MainActivity extends Activity {
     private Button button_start;
     private Button button_stop;
     private TextView textView_title;
-    private TextView textView_time;
     private TextView textView_info;
-    private ImageView imageView_clock;
 
     private static int hour;
     private static int _minute;
 
-    private Handler handler;
+    private StaticHandler handler;
 
     private ListView listView_app;
 
@@ -107,21 +106,8 @@ public class MainActivity extends Activity {
             }
         }
 
-        //
-        handler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-                switch (msg.what) {
-                    //Show real time
-                    case 0:
-                        textView_time.setText(new Date().toString());
-                        break;
-                    default:
-                        break;
-                }
-                super.handleMessage(msg);
-            }
-        };
+        //静态内部类，继承Handler
+        handler = new StaticHandler(this);
 
         //异步获取第三方应用信息
         new Thread(new Runnable() {
@@ -154,11 +140,9 @@ public class MainActivity extends Activity {
         button_stop = findViewById(R.id.button_stop);
         button_stop.setOnClickListener(new OnClickListener());
 
-        textView_time = findViewById(R.id.textView_time);
-
         textView_info = findViewById(R.id.textView_info);
 
-        imageView_clock = findViewById(R.id.imageView_clock);
+        ImageView imageView_clock = findViewById(R.id.imageView_clock);
 
         imageView_clock.setOnClickListener(new OnClickListener());
 
@@ -170,12 +154,18 @@ public class MainActivity extends Activity {
             return false;
         ActivityManager myManager = (ActivityManager) context
                 .getSystemService(Context.ACTIVITY_SERVICE);
-        ArrayList<ActivityManager.RunningServiceInfo> runningService = (ArrayList<ActivityManager.RunningServiceInfo>) myManager
-                .getRunningServices(30);
-        for (int i = 0; i < runningService.size(); i++) {
-            if (runningService.get(i).service.getClassName().toString()
-                    .equals(ServiceName)) {
-                return true;
+        ArrayList<ActivityManager.RunningServiceInfo> runningService = null;
+
+        if (myManager != null) {
+            runningService = (ArrayList<ActivityManager.RunningServiceInfo>) myManager
+                    .getRunningServices(30);
+        }
+        if (runningService != null) {
+            for (int i = 0; i < runningService.size(); i++) {
+                if (runningService.get(i).service.getClassName().toString()
+                        .equals(ServiceName)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -284,6 +274,28 @@ public class MainActivity extends Activity {
                     break;
             }
 
+        }
+    }
+
+    static class StaticHandler extends Handler {
+
+        WeakReference<Activity> weakReference;
+
+        StaticHandler(Activity activity) {
+            weakReference = new WeakReference<>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            Activity activity = weakReference.get();
+
+            if (activity == null) return;
+
+            //Show real time
+            if (msg.what == 0) {
+                ((TextView) activity.findViewById(R.id.textView_time)).setText(new Date().toString());
+            }
+            super.handleMessage(msg);
         }
     }
 }

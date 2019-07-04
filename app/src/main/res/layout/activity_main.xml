@@ -11,12 +11,12 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:background="@android:color/holo_green_dark"
-        android:gravity="left|center_vertical"
-        android:paddingLeft="5dp"
+        android:gravity="start|center_vertical"
+        android:paddingStart="5dp"
+        android:paddingEnd="5dp"
         android:text="@string/tip_title"
         android:textColor="@android:color/background_light"
-        android:textSize="20dp" />
-
+        android:textSize="20sp" />
 
     <ListView
         android:id="@+id/listView_app"
@@ -24,9 +24,10 @@
         android:layout_height="0dp"
         android:layout_marginTop="2dp"
         android:layout_weight="6"
+        android:animationCache="false"
         android:dividerHeight="5dp"
-        android:fastScrollEnabled="true" />
-
+        android:fastScrollEnabled="true"
+        android:scrollingCache="false" />
 
     <TextView
         android:id="@+id/textView_time"
@@ -41,6 +42,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="2"
+        android:contentDescription="@string/device_app_icon"
         android:scaleType="centerInside"
         android:src="@mipmap/icon" />
 
@@ -71,7 +73,6 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_margin="5dp"
-
             android:layout_weight="1"
             android:enabled="false"
             android:padding="5dp"
