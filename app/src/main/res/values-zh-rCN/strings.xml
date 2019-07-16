@@ -11,4 +11,6 @@
     <string name="device_app_icon">设备应用图标</string>
     <string name="installed_apps">个已装应用！</string>
     <string name="alarm_time">提醒时间为</string>
+    <string name="is_local">单机运行</string>
+    <string name="is_remote">远程控制</string>
 </resources>

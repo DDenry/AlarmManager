@@ -4,9 +4,12 @@ import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import java.util.Objects;
 
 import static android.content.Context.KEYGUARD_SERVICE;
 
@@ -18,6 +21,23 @@ public class AlarmReceiver extends BroadcastReceiver {
         if (intent.getAction().equals(Config.ALARM_ACTION_SIGNAL)) {
 
             Log.i("Receiver", "Have received broadcast!");
+
+            //判断当前设备情景模式
+            int ringerMode = ((AudioManager) Objects.requireNonNull(context.getSystemService(Context.AUDIO_SERVICE))).getRingerMode();
+
+            Log.i("RingerMode", "Current device's ringerMode is " + ringerMode);
+
+            switch (ringerMode) {
+                //0
+                case AudioManager.RINGER_MODE_SILENT:
+                    break;
+                //1
+                case AudioManager.RINGER_MODE_VIBRATE:
+                    break;
+                //2
+                case AudioManager.RINGER_MODE_NORMAL:
+                    break;
+            }
 
             //唤醒CPU
             PowerManager powerManager = (PowerManager) context.getApplicationContext()

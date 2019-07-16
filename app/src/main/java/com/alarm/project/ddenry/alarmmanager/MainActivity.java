@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -15,34 +16,37 @@ import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.TimePicker;
+import android.widget.ToggleButton;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends Activity {
 
     private Button button_start;
+
     private Button button_stop;
+
+    private ToggleButton toggleButton;
+
     private TextView textView_title;
+
     private TextView textView_info;
 
     private static int hour;
-    private static int _minute;
+
+    private static int minute;
 
     private StaticHandler handler;
 
@@ -53,9 +57,15 @@ public class MainActivity extends Activity {
     private List<ResolveInfo> resolveInfo;
 
     private String appName;
+
     private String appPackageName;
 
     private LinearLayout linearLayout;
+
+    //目标Service，全局唯一
+    private Intent service;
+
+    private ListenServer listenServer;
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -63,7 +73,7 @@ public class MainActivity extends Activity {
 
         outState.putString("packageName", appPackageName);
         outState.putInt("hour", hour);
-        outState.putInt("minute", _minute);
+        outState.putInt("minute", minute);
     }
 
     @Override
@@ -71,7 +81,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //
+        //初始化控件
         InitComponents();
 
         boolean serviceStarted = isServiceRunning(MainActivity.this, getPackageName() + ".AlarmService");
@@ -91,7 +101,7 @@ public class MainActivity extends Activity {
 
                 //
                 hour = savedInstanceState.getInt("hour");
-                _minute = savedInstanceState.getInt("minute");
+                minute = savedInstanceState.getInt("minute");
 
                 textView_info.setText(packageName);
 
@@ -118,14 +128,13 @@ public class MainActivity extends Activity {
             }
         }).start();
 
-        //
+        //更新UI时间
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
                 handler.sendEmptyMessage(0);
             }
         }, 1000, 1000);
-
     }
 
     protected void InitComponents() {
@@ -139,6 +148,8 @@ public class MainActivity extends Activity {
 
         button_stop = findViewById(R.id.button_stop);
         button_stop.setOnClickListener(new OnClickListener());
+
+        toggleButton = findViewById(R.id.toggleButton_remote);
 
         textView_info = findViewById(R.id.textView_info);
 
@@ -162,7 +173,7 @@ public class MainActivity extends Activity {
         }
         if (runningService != null) {
             for (int i = 0; i < runningService.size(); i++) {
-                if (runningService.get(i).service.getClassName().toString()
+                if (runningService.get(i).service.getClassName()
                         .equals(ServiceName)) {
                     return true;
                 }
@@ -198,9 +209,9 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void showSnackBar() {
+    private void ShowSnackBar() {
 
-        Snackbar.make(linearLayout, getResources().getString(R.string.alarm_time) + " " + hour + ":" + _minute, Snackbar.LENGTH_SHORT).setAction("DDenry~", new View.OnClickListener() {
+        Snackbar.make(linearLayout, getResources().getString(R.string.alarm_time) + " " + hour + ":" + minute, Snackbar.LENGTH_SHORT).setAction("DDenry~", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.i("SnackBar", "Button clicked!");
@@ -216,7 +227,7 @@ public class MainActivity extends Activity {
     private class OnClickListener implements View.OnClickListener {
         @Override
         public void onClick(View v) {
-            Intent service = new Intent(MainActivity.this, AlarmService.class);
+
             switch (v.getId()) {
 
                 case R.id.imageView_clock:
@@ -227,53 +238,87 @@ public class MainActivity extends Activity {
                                     @Override
                                     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
                                         hour = hourOfDay;
-                                        _minute = minute;
+                                        MainActivity.minute = minute;
                                     }
                                 }, Calendar.getInstance().get(Calendar.HOUR_OF_DAY), Calendar.getInstance().get(Calendar.MINUTE), true).show();
-                    else showSnackBar();
+                    else ShowSnackBar();
 
                     break;
 
                 case R.id.button_start:
 
-                    button_stop.setEnabled(true);
-
-                    button_start.setText(R.string.service_running);
-                    button_start.setEnabled(false);
-
-                    service.putExtra("APP_NAME", appName);
-                    service.putExtra("APP_PACKAGE", appPackageName);
+                    SetupService();
 
                     //
-                    service.putExtra("HOUR", hour);
-                    service.putExtra("MINUTE", _minute);
-
-                    listView_app.setVisibility(View.GONE);
-
-                    textView_title.setText(getResources().getString(R.string.service_running));
-
-                    showSnackBar();
-
-                    //开启服务
-                    startService(service);
+                    ListenRemote(toggleButton.isChecked());
 
                     break;
                 case R.id.button_stop:
-                    button_stop.setEnabled(false);
 
-                    button_start.setText(R.string.start_service);
-                    button_start.setEnabled(true);
-
-                    //关闭服务
-                    stopService(service);
-
-                    listView_app.setVisibility(View.VISIBLE);
-
-                    textView_title.setText(getResources().getString(R.string.tip_title));
+                    ShutdownService();
 
                     break;
             }
+        }
 
+        //开启服务
+        private void SetupService() {
+
+            if (service != null) stopService(service);
+
+            button_stop.setEnabled(true);
+            button_start.setText(R.string.service_running);
+            button_start.setEnabled(false);
+            toggleButton.setEnabled(false);
+            listView_app.setVisibility(View.GONE);
+            textView_title.setText(getResources().getString(R.string.service_running));
+            ShowSnackBar();
+
+            //实例化Service
+            service = new Intent(MainActivity.this, AlarmService.class);
+
+            //应用名称
+            service.putExtra("APP_NAME", appName);
+            //应用包名
+            service.putExtra("APP_PACKAGE", appPackageName);
+            //
+            SetupService(MainActivity.hour, MainActivity.minute);
+        }
+
+        private void SetupService(int hour, int minute) {
+            if (service == null) return;
+            //几时
+            service.putExtra("HOUR", hour);
+            //几分
+            service.putExtra("MINUTE", minute);
+            //开启服务
+            startService(service);
+        }
+
+        //关闭服务
+        private void ShutdownService() {
+
+            if (service != null)
+                //关闭服务
+                stopService(service);
+
+            button_stop.setEnabled(false);
+            button_start.setText(R.string.start_service);
+            button_start.setEnabled(true);
+            toggleButton.setEnabled(true);
+            listView_app.setVisibility(View.VISIBLE);
+            textView_title.setText(getResources().getString(R.string.tip_title));
+        }
+
+        //远程监听
+        private void ListenRemote(boolean inNeed) {
+            if (inNeed) {
+                listenServer.execute();
+            } else {
+                //强制停止
+                listenServer.cancel(true);
+                if (listenServer.isCancelled()) listenServer = null;
+            }
         }
     }
 
@@ -296,6 +341,28 @@ public class MainActivity extends Activity {
                 ((TextView) activity.findViewById(R.id.textView_time)).setText(new Date().toString());
             }
             super.handleMessage(msg);
+        }
+    }
+
+    private class ListenServer extends AsyncTask {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Object doInBackground(Object[] objects) {
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Object[] values) {
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onCancelled() {
+            super.onCancelled();
         }
     }
 }

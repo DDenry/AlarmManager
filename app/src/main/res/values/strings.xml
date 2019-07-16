@@ -11,4 +11,6 @@
     <string name="device_app_icon">device app icon</string>
     <string name="installed_apps">installed apps found!</string>
     <string name="alarm_time">Alarm time is </string>
+    <string name="is_local">Local</string>
+    <string name="is_remote">Remote</string>
     </resources>
