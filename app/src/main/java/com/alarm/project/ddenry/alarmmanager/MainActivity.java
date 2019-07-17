@@ -82,7 +82,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         //初始化控件
-        InitComponents();
+        initComponents();
 
         boolean serviceStarted = isServiceRunning(MainActivity.this, getPackageName() + ".AlarmService");
 
@@ -124,7 +124,7 @@ public class MainActivity extends Activity {
             @Override
             public void run() {
                 //
-                DigThirdAppInfo();
+                digThirdAppInfo();
             }
         }).start();
 
@@ -137,7 +137,7 @@ public class MainActivity extends Activity {
         }, 1000, 1000);
     }
 
-    protected void InitComponents() {
+    protected void initComponents() {
 
         linearLayout = findViewById(R.id.linearLayout);
 
@@ -182,7 +182,7 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    protected void DigThirdAppInfo() {
+    protected void digThirdAppInfo() {
         packageManager = getPackageManager();
         //匹配程序的入口
         Intent intent = new Intent(Intent.ACTION_MAIN, null);
@@ -209,7 +209,7 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void ShowSnackBar() {
+    private void showSnackBar() {
 
         Snackbar.make(linearLayout, getResources().getString(R.string.alarm_time) + " " + hour + ":" + minute, Snackbar.LENGTH_SHORT).setAction("DDenry~", new View.OnClickListener() {
             @Override
@@ -241,28 +241,28 @@ public class MainActivity extends Activity {
                                         MainActivity.minute = minute;
                                     }
                                 }, Calendar.getInstance().get(Calendar.HOUR_OF_DAY), Calendar.getInstance().get(Calendar.MINUTE), true).show();
-                    else ShowSnackBar();
+                    else showSnackBar();
 
                     break;
 
                 case R.id.button_start:
 
-                    SetupService();
+                    setupService();
 
                     //
-                    ListenRemote(toggleButton.isChecked());
+                    listenRemote(toggleButton.isChecked());
 
                     break;
                 case R.id.button_stop:
 
-                    ShutdownService();
+                    shutdownService();
 
                     break;
             }
         }
 
         //开启服务
-        private void SetupService() {
+        private void setupService() {
 
             if (service != null) stopService(service);
 
@@ -272,7 +272,6 @@ public class MainActivity extends Activity {
             toggleButton.setEnabled(false);
             listView_app.setVisibility(View.GONE);
             textView_title.setText(getResources().getString(R.string.service_running));
-            ShowSnackBar();
 
             //实例化Service
             service = new Intent(MainActivity.this, AlarmService.class);
@@ -282,21 +281,26 @@ public class MainActivity extends Activity {
             //应用包名
             service.putExtra("APP_PACKAGE", appPackageName);
             //
-            SetupService(MainActivity.hour, MainActivity.minute);
+            setupService(MainActivity.hour, MainActivity.minute);
         }
 
-        private void SetupService(int hour, int minute) {
+        private void setupService(int hour, int minute) {
             if (service == null) return;
+
+            stopService(service);
+
             //几时
             service.putExtra("HOUR", hour);
             //几分
             service.putExtra("MINUTE", minute);
             //开启服务
             startService(service);
+            //显示SnackBar
+            showSnackBar();
         }
 
         //关闭服务
-        private void ShutdownService() {
+        private void shutdownService() {
 
             if (service != null)
                 //关闭服务
@@ -310,11 +314,42 @@ public class MainActivity extends Activity {
             textView_title.setText(getResources().getString(R.string.tip_title));
         }
 
+        private ListenServer asyncTaskPop() {
+            return new ListenServer(new AsyncTaskDone() {
+                @Override
+                public void onSucceed() {
+                    //生效远程配置
+                    setupService(hour, minute);
+                }
+
+                @Override
+                public void onFailed() {
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            asyncTaskPop().execute();
+                        }
+                    }, 60 * 1000);
+                }
+            });
+        }
+
         //远程监听
-        private void ListenRemote(boolean inNeed) {
+        private void listenRemote(boolean inNeed) {
             if (inNeed) {
+                if (listenServer != null) {
+                    listenServer.cancel(true);
+                    listenServer = null;
+                }
+
+                //ListenServer AsyncTask
+                listenServer = asyncTaskPop();
+
                 listenServer.execute();
+
             } else {
+                if (listenServer == null) return;
+
                 //强制停止
                 listenServer.cancel(true);
                 if (listenServer.isCancelled()) listenServer = null;
@@ -344,25 +379,39 @@ public class MainActivity extends Activity {
         }
     }
 
-    private class ListenServer extends AsyncTask {
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
+    private static class ListenServer extends AsyncTask<String, Integer, String[]> {
+
+        private AsyncTaskDone asyncTaskDone;
+
+        ListenServer(AsyncTaskDone asyncTaskDone) {
+            this.asyncTaskDone = asyncTaskDone;
         }
 
         @Override
-        protected Object doInBackground(Object[] objects) {
-            return null;
+        protected String[] doInBackground(String... strings) {
+            byte[] bytes = new HttpUtil().doPost(Config.SERVER_CONFIG_FILE);
+            if (bytes == null) return null;
+            String result = new String(bytes);
+            Log.i("Remote", "Result is " + result);
+            return result.split(",");
         }
 
         @Override
-        protected void onProgressUpdate(Object[] values) {
-            super.onProgressUpdate(values);
-        }
+        protected void onPostExecute(String[] strings) {
+            super.onPostExecute(strings);
 
-        @Override
-        protected void onCancelled() {
-            super.onCancelled();
+            if (strings == null) {
+                asyncTaskDone.onFailed();
+                return;
+            }
+
+            if (hour != Integer.parseInt(strings[0]) && minute != Integer.parseInt(strings[1])) {
+                hour = Integer.parseInt(strings[0]);
+                minute = Integer.parseInt(strings[1]);
+
+                //接口回调
+                asyncTaskDone.onSucceed();
+            }
         }
     }
 }

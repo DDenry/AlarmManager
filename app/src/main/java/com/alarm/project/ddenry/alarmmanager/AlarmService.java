@@ -152,7 +152,7 @@ public class AlarmService extends Service {
             alarmManager.cancel(pendingIntent);
         }
 
-        Toast.makeText(this, R.string.no_service_running, Toast.LENGTH_SHORT).show();
+//        Toast.makeText(this, R.string.no_service_running, Toast.LENGTH_SHORT).show();
 
         super.onDestroy();
     }
