@@ -5,14 +5,13 @@ import android.app.ActivityManager;
 import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.design.widget.BaseTransientBottomBar;
-import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -23,6 +22,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.ToggleButton;
+
+import com.google.android.material.snackbar.BaseTransientBottomBar;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -79,7 +81,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
+
+        //
+        packageManager = getPackageManager();
 
         //初始化控件
         initComponents();
@@ -135,6 +141,23 @@ public class MainActivity extends Activity {
                 handler.sendEmptyMessage(0);
             }
         }, 1000, 1000);
+
+        selfCheck();
+    }
+
+    protected void selfCheck() {
+        try {
+            PackageInfo packageInfo = packageManager.getPackageInfo(getPackageName(), 0);
+            String versionName = packageInfo.versionName;
+            int versionCode = packageInfo.versionCode;
+
+            Log.i("PackageInfo", "VersionName:" + versionName);
+            Log.i("PackageInfo", "VersionCode:" + versionCode);
+            Log.i("AndroidSDKInfo", android.os.Build.VERSION.RELEASE);
+
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     protected void initComponents() {
@@ -183,7 +206,7 @@ public class MainActivity extends Activity {
     }
 
     protected void digThirdAppInfo() {
-        packageManager = getPackageManager();
+
         //匹配程序的入口
         Intent intent = new Intent(Intent.ACTION_MAIN, null);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -318,8 +341,20 @@ public class MainActivity extends Activity {
             return new ListenServer(new AsyncTaskDone() {
                 @Override
                 public void onSucceed() {
-                    //生效远程配置
-                    setupService(hour, minute);
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            //生效远程配置
+                            setupService(hour, minute);
+                        }
+                    }, 1000);
+
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            asyncTaskPop().execute();
+                        }
+                    }, 30 * 60 * 1000);
                 }
 
                 @Override
@@ -405,13 +440,15 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            if (hour != Integer.parseInt(strings[0]) && minute != Integer.parseInt(strings[1])) {
+            if (hour != Integer.parseInt(strings[0]) || minute != Integer.parseInt(strings[1])) {
+
                 hour = Integer.parseInt(strings[0]);
                 minute = Integer.parseInt(strings[1]);
 
                 //接口回调
                 asyncTaskDone.onSucceed();
-            }
+
+            } else asyncTaskDone.onFailed();
         }
     }
 }
