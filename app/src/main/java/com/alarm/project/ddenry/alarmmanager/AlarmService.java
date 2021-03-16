@@ -11,7 +11,6 @@ import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.util.Calendar;
 import java.util.TimeZone;

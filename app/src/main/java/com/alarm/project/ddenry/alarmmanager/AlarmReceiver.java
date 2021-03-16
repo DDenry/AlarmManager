@@ -1,13 +1,18 @@
 package com.alarm.project.ddenry.alarmmanager;
 
+import android.Manifest;
 import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
+import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import androidx.core.content.ContextCompat;
 
 import java.util.Objects;
 
@@ -21,6 +26,18 @@ public class AlarmReceiver extends BroadcastReceiver {
         if (intent.getAction().equals(Config.ALARM_ACTION_SIGNAL)) {
 
             Log.i("Receiver", "Have received broadcast!");
+
+            //获取wifi管理服务
+            WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+
+            if (wifiManager != null) {
+                //获取wifi开关状态
+                int status = wifiManager.getWifiState();
+
+                if (status == WifiManager.WIFI_STATE_DISABLED) {
+                    wifiManager.setWifiEnabled(true);
+                }
+            }
 
             //判断当前设备情景模式
             int ringerMode = ((AudioManager) Objects.requireNonNull(context.getSystemService(Context.AUDIO_SERVICE))).getRingerMode();
@@ -50,7 +67,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 //唤醒屏幕
                 wakeLock = powerManager.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP |
                         PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "AlarmManager:WakeLock");
-                wakeLock.acquire(5 * 60 * 1000L /*5 minutes*/);
+                wakeLock.acquire(5 * 60 * 1000L);
 
                 wakeLock.setReferenceCounted(false);
             }
