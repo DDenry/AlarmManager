@@ -2,18 +2,27 @@ package com.alarm.project.ddenry.alarmmanager;
 
 import android.app.ActivityManager;
 import android.app.AlarmManager;
-import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
+import androidx.core.app.NotificationCompat;
+
 import java.util.Calendar;
+import java.util.Random;
 import java.util.TimeZone;
+
+import static androidx.core.app.NotificationCompat.PRIORITY_DEFAULT;
 
 public class AlarmService extends Service {
 
@@ -29,15 +38,39 @@ public class AlarmService extends Service {
     @Override
     public void onCreate() {
         Log.i("Service", "OnCreate!");
+
         activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+
         super.onCreate();
 
-        // 在API11之后构建Notification的方式
-        Notification.Builder builder = new Notification.Builder(this.getApplicationContext());
-        builder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.icon)).setContentTitle("").setContentText("Service is running in backend!").setWhen(System.currentTimeMillis());
-        Notification notification = builder.build();
-        notification.defaults = Notification.DEFAULT_SOUND;
-        startForeground(Config.FOREGROUND_SERVICE_CODE, notification);
+        NotificationCompat.Builder builder;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder = new NotificationCompat.Builder(this.getApplicationContext(), String.valueOf(Config.FOREGROUND_SERVICE_NOTIFICATION_CHANNEL));
+
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(String.valueOf(Config.FOREGROUND_SERVICE_NOTIFICATION_CHANNEL), Config.FOREGROUND_SERVICE_CHANNEL_NAME, importance);
+            channel.setDescription(Config.FOREGROUND_SERVICE_CHANNEL_NAME);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        } else builder = new NotificationCompat.Builder(this.getApplicationContext());
+
+        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.mipmap.icon);
+
+        builder.setContentTitle("Be silent ...")
+                .setContentText("It's coming~")
+                .setLargeIcon(icon)
+                .setSmallIcon(R.mipmap.icon)
+                .setPriority(PRIORITY_DEFAULT)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setOngoing(true)
+                .setWhen(System.currentTimeMillis())
+                .setTicker("Ticker")
+                .setAutoCancel(false);
+
+        startForeground(new Random().nextInt(20), builder.build());
     }
 
     @Override
@@ -79,17 +112,21 @@ public class AlarmService extends Service {
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        Log.i("Service", "Has stopped app " + appPackageName);
-
-                        //回到主界面
-                        Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
-                        mHomeIntent.addCategory(Intent.CATEGORY_HOME);
-                        mHomeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                                | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-                        startActivity(mHomeIntent);
 
                         try {
-                            Thread.sleep(1000);
+                            //回到主界面
+                            Intent intent = new Intent(Intent.ACTION_MAIN);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                            intent.addCategory(Intent.CATEGORY_HOME);
+                            startActivity(intent);
+
+                            Log.i("Intent", "ACTION_MAIN");
+                        } catch (ActivityNotFoundException e) {
+                            Log.e("Exception", e.getMessage());
+                        }
+
+                        try {
+                            Thread.sleep(3000);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -97,7 +134,10 @@ public class AlarmService extends Service {
                         //停止后台进程
                         activityManager.killBackgroundProcesses(appPackageName);
 
+                        Log.i("Service", "Has stopped app " + appPackageName);
+
                         //重启自身应用
+                        Log.i("Restart", getPackageName());
                         startActivity(getPackageManager().getLaunchIntentForPackage(getPackageName()));
                     }
                 }, 30 * 1000);

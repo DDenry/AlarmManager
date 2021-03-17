@@ -1,18 +1,14 @@
 package com.alarm.project.ddenry.alarmmanager;
 
-import android.Manifest;
 import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 import android.util.Log;
 import android.widget.Toast;
-
-import androidx.core.content.ContextCompat;
 
 import java.util.Objects;
 
@@ -67,11 +63,10 @@ public class AlarmReceiver extends BroadcastReceiver {
                 //唤醒屏幕
                 wakeLock = powerManager.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP |
                         PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "AlarmManager:WakeLock");
-                wakeLock.acquire(5 * 60 * 1000L);
+                wakeLock.acquire(3 * 60 * 1000L);
 
                 wakeLock.setReferenceCounted(false);
             }
-
 
             KeyguardManager keyguardManager = (KeyguardManager) context
                     .getSystemService(KEYGUARD_SERVICE);
