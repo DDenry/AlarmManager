@@ -7,7 +7,7 @@
     <string name="tip_keep_service">Please keep the service running for well-working</string>
     <string name="no_service_running">There\'s no service running~</string>
     <string name="tip_title">Please select the app and time:</string>
-    <string name="copy_right">©2019-* @DDenry All rights reserved.</string>
+    <string name="copy_right">©2021-* @DDenry All rights reserved.</string>
     <string name="device_app_icon">device app icon</string>
     <string name="installed_apps">installed apps found!</string>
     <string name="alarm_time">Alarm time is </string>
