@@ -1,5 +1,6 @@
 package com.alarm.project.ddenry.alarmmanager;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.TimePickerDialog;
@@ -9,6 +10,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -22,6 +24,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.ToggleButton;
+
+import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
@@ -86,6 +90,15 @@ public class MainActivity extends Activity {
 
         //
         packageManager = getPackageManager();
+
+        //
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.KILL_BACKGROUND_PROCESSES) != PackageManager.PERMISSION_GRANTED) {
+            Log.i("Permission", "No permission");
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.FOREGROUND_SERVICE, Manifest.permission.KILL_BACKGROUND_PROCESSES}, 100);
+            }
+        }
 
         //初始化控件
         initComponents();
@@ -317,7 +330,12 @@ public class MainActivity extends Activity {
             //几分
             service.putExtra("MINUTE", minute);
             //开启服务
-            startService(service);
+//            startService(service);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(service);
+            } else {
+                startService(service);
+            }
             //显示SnackBar
             showSnackBar();
         }

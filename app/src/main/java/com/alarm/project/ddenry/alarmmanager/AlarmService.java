@@ -3,15 +3,19 @@ package com.alarm.project.ddenry.alarmmanager;
 import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
+
+import androidx.core.app.NotificationCompat;
 
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -33,11 +37,34 @@ public class AlarmService extends Service {
         activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         super.onCreate();
 
-        // 在API11之后构建Notification的方式
-        Notification.Builder builder = new Notification.Builder(this.getApplicationContext());
-        builder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.icon)).setContentTitle("").setContentText("Service is running in backend!").setWhen(System.currentTimeMillis());
+        NotificationCompat.Builder builder = null;
+
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            NotificationChannel channel = new NotificationChannel(String.valueOf(Config.FOREGROUND_SERVICE_CODE), Config.FOREGROUND_SERVICE_NAME, NotificationManager.IMPORTANCE_HIGH);
+
+            notificationManager.createNotificationChannel(channel);
+
+            builder = new NotificationCompat.Builder(this, String.valueOf(Config.FOREGROUND_SERVICE_CODE));
+
+        } else {
+            // 在API11之后构建Notification的方式
+            builder = new NotificationCompat.Builder(this.getApplicationContext());
+        }
+
+        builder.setLargeIcon(BitmapFactory.decodeResource(getResources(), R.mipmap.icon))
+                .setContentTitle("Important")
+                .setContentText("Service is running in backend!")
+                .setWhen(System.currentTimeMillis())
+                .setPriority(Notification.PRIORITY_HIGH)
+                .setOngoing(true)
+                .setAutoCancel(false)
+                .setTicker("Coming")
+                .setDefaults(Notification.DEFAULT_ALL);
+
         Notification notification = builder.build();
-        notification.defaults = Notification.DEFAULT_SOUND;
         startForeground(Config.FOREGROUND_SERVICE_CODE, notification);
     }
 
@@ -75,13 +102,12 @@ public class AlarmService extends Service {
 
         if (intent.getStringExtra("PROCESS") != null)
             if (intent.getStringExtra("PROCESS").equals("Receiver")) {
+                //顺势向后延续一天
                 instance.add(Calendar.DAY_OF_MONTH, 1);
                 //
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        Log.i("Service", "Has stopped app " + appPackageName);
-
                         //回到主界面
                         Intent mHomeIntent = new Intent(Intent.ACTION_MAIN);
                         mHomeIntent.addCategory(Intent.CATEGORY_HOME);
@@ -94,6 +120,8 @@ public class AlarmService extends Service {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+
+                        Log.i("Service", "Has stopped app " + appPackageName);
 
                         //停止后台进程
                         activityManager.killBackgroundProcesses(appPackageName);
